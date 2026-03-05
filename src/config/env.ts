@@ -22,7 +22,7 @@ interface EnvConfig {
   REDIS_PORT: number;
   REDIS_PASSWORD?: string;
 
-  // JWT - Pastikan ini selalu string
+  // JWT
   JWT_SECRET: string;
   JWT_EXPIRES_IN: string;
   JWT_REFRESH_SECRET: string;
@@ -37,6 +37,9 @@ interface EnvConfig {
 
   // Logging
   LOG_LEVEL: string;
+
+  // CORS (TAMBAHKAN INI)
+  CORS_ORIGIN?: string;
 }
 
 const getEnvVar = (key: keyof EnvConfig, defaultValue?: string): string => {
@@ -47,7 +50,7 @@ const getEnvVar = (key: keyof EnvConfig, defaultValue?: string): string => {
   return value;
 };
 
-const getOptionalEnvVar = (key: string, defaultValue?: string): string => {
+const getOptionalEnvVar = (key: keyof EnvConfig, defaultValue?: string): string => {
   return process.env[key] || defaultValue || '';
 };
 
@@ -85,4 +88,7 @@ export const config: EnvConfig = {
 
   // Logging
   LOG_LEVEL: getEnvVar('LOG_LEVEL', 'debug'),
+
+  // CORS (opsional)
+  CORS_ORIGIN: process.env.CORS_ORIGIN,
 };

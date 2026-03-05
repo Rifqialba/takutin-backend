@@ -7,25 +7,35 @@ import { config } from './config/env';
 import Logger from './utils/logger';
 import v1Routes from './routes/v1';
 import { errorHandler, NotFoundError } from './middleware/error.middleware';
-import { corsOptions } from './config/cors';
 import { validateEnvironment } from './config/validation';
+
 validateEnvironment();
 
-const app: Application = express();
+const app = express();
 
-// Middleware
-app.use(helmet());
+// ========== KONFIGURASI CORS (SATU KALI, SEBELUM MIDDLEWARE LAIN) ==========
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
+  : process.env.NODE_ENV === 'production'
+    ? ['https://takutin-frontend.vercel.app', 'https://takutin.vercel.app']
+    : ['http://localhost:3001'];
+
+Logger.info('CORS allowed origins:', allowedOrigins);
+
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === 'production' ? ['https://takutin.com'] : ['http://localhost:3001'],
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
+
+// ========== MIDDLEWARE LAINNYA ==========
+app.use(helmet());
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Rate limiting
 const limiter = rateLimit({
   windowMs: config.RATE_LIMIT_WINDOW_MS,
   max: config.RATE_LIMIT_MAX_REQUESTS,
@@ -35,12 +45,13 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// Logging
 app.use((req: Request, res: Response, next: NextFunction) => {
   Logger.http(`${req.method} ${req.url}`);
   next();
 });
 
-// Health check
+// Health check (public)
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'OK',
@@ -59,18 +70,5 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Error handler
 app.use(errorHandler);
-app.use(cors(corsOptions));
-// Di akhir file app.ts, sebelum export
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  Logger.error('Unhandled error:', err);
 
-  const status = err.status || 500;
-  const message = err.message || 'Internal Server Error';
-
-  res.status(status).json({
-    success: false,
-    message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-  });
-});
 export default app;
