@@ -6,10 +6,8 @@ import Logger from './utils/logger';
 
 const PORT = config.PORT;
 
-// Untuk Vercel, kita perlu export app sebagai default
-// Jangan langsung listen, Vercel akan handle itu
+// Untuk development lokal
 if (process.env.NODE_ENV !== 'production') {
-  // Hanya listen di development
   const startServer = async () => {
     try {
       await testDbConnection();
@@ -34,5 +32,5 @@ if (process.env.NODE_ENV !== 'production') {
   startServer();
 }
 
-// Export untuk Vercel
+// Export untuk Vercel (WAJIB!)
 export default app;

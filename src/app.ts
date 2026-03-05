@@ -11,17 +11,17 @@ import { corsOptions } from './config/cors';
 import { validateEnvironment } from './config/validation';
 validateEnvironment();
 
-
 const app: Application = express();
 
 // Middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://takutin.com'] 
-    : ['http://localhost:3001'],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === 'production' ? ['https://takutin.com'] : ['http://localhost:3001'],
+    credentials: true,
+  }),
+);
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -42,10 +42,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({ 
-    status: 'OK', 
+  res.status(200).json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
-    environment: config.NODE_ENV
+    environment: config.NODE_ENV,
   });
 });
 
@@ -60,4 +60,17 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // Error handler
 app.use(errorHandler);
 app.use(cors(corsOptions));
+// Di akhir file app.ts, sebelum export
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  Logger.error('Unhandled error:', err);
+
+  const status = err.status || 500;
+  const message = err.message || 'Internal Server Error';
+
+  res.status(status).json({
+    success: false,
+    message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
+});
 export default app;

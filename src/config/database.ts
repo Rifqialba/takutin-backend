@@ -14,10 +14,10 @@ if (config.DATABASE_URL) {
     },
     max: 5, // Kurangi untuk serverless
     idleTimeoutMillis: 10000,
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: 10000, // Naikkan timeout
   });
 
-  // Set timezone ke UTC untuk sesi ini
+  // Set timezone ke UTC
   pool.on('connect', (client) => {
     client.query("SET TIME ZONE 'UTC';", (err) => {
       if (err) {
@@ -28,9 +28,10 @@ if (config.DATABASE_URL) {
 }
 
 // Test connection - hanya untuk development
-const testConnection = async () => {
+export const testConnection = async () => {
   if (process.env.NODE_ENV === 'production') {
-    return true; // Skip di production
+    Logger.info('✅ Skipping connection test in production');
+    return true;
   }
 
   try {
@@ -45,4 +46,15 @@ const testConnection = async () => {
   }
 };
 
-export { pool, testConnection };
+// Handler untuk query (dengan error handling)
+export const query = async (text: string, params?: any[]) => {
+  try {
+    const result = await pool.query(text, params);
+    return result;
+  } catch (error) {
+    Logger.error('Database query error:', error);
+    throw error;
+  }
+};
+
+export { pool };
